@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 
-# Create your views here.
+# get all songs or add a new song to db
 class SongList(APIView):
     def get(self, request):
         song = Song.objects.all()
@@ -27,6 +27,7 @@ class SongList(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# get song and update, edit, or delete song
 class SongDetail(APIView):
     def get_by_id(self, pk):
         try:
@@ -56,3 +57,25 @@ class SongDetail(APIView):
         song.delete()
         
         return Response(serializer.data, status=200)
+
+# add likes to song
+class Likes(APIView):
+    def get_by_id(self, pk):
+        try:
+            return Song.objects.get(pk=pk)
+        except Song.DoesNotExist:
+            return HttpResponse(status=404)
+
+    def put(self, request, pk):
+        song = self.get_by_id(pk)
+
+        current_likes = song.likes
+
+        serializer = SongSerializer(song, data=request.data)
+
+        if serializer.is_valid():
+            serializer.validated_data['likes'] = current_likes + serializer.validated_data['likes']
+
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
